@@ -1,5 +1,6 @@
 package com.umair.journalApp.entity;
 
+import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import org.bson.types.ObjectId;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @Document(collection = "users")
 @Data
+@Builder
 public class User
 {
   @Id
@@ -21,9 +23,14 @@ public class User
   @Indexed(unique = true)
   @NonNull
   private String username;
+  private String email;
+ private boolean sentimentAnalysis;
   @NonNull
   private String password;
 
   @DBRef
-  private List<JournalEntry> journalEntries = new ArrayList<>();
+  private List<JournalEntry> journalEntries;
+
+  private List<String> roles;
+
 }

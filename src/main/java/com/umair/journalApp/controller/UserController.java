@@ -1,14 +1,17 @@
 package com.umair.journalApp.controller;
 
+import com.umair.journalApp.api.response.WhetherResponse;
 import com.umair.journalApp.entity.User;
+import com.umair.journalApp.repository.UserRepositoryImpl;
 import com.umair.journalApp.service.UserService;
-import org.bson.types.ObjectId;
+import com.umair.journalApp.service.WheatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,60 +26,53 @@ public class UserController
   @Autowired
   private UserService userService;
 
-  @GetMapping
-  public ResponseEntity<List<User>> getAllUsers()
+
+  @Autowired
+  private WheatherService wheatherService;
+
+  @Autowired UserRepositoryImpl userRepository;
+
+
+  @DeleteMapping
+  public ResponseEntity<?> deleteUser()
   {
-    List<User> allUsers = userService.getAllUsers();
-    return new ResponseEntity<>(allUsers, HttpStatus.OK);
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    userService.deleteUser(authentication.getName());
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
-  @PostMapping
-  public ResponseEntity<User> createUser(@RequestBody User user)
+  @PutMapping
+  public ResponseEntity<User> updateUser(@RequestBody User user)
   {
-    try
-    {
-      User userinDB = userService.getUserByUsername(user.getUsername());
-      if (user.getUsername().equals(userinDB.getUsername()))
-      {
-        return new ResponseEntity<>(HttpStatus.CONFLICT);
-      }
-
-      userService.saveUser(user);
-      return new ResponseEntity<>(user, HttpStatus.CREATED);
-    }
-    catch (Exception e)
-    {
-      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-    }
-
-  }
-
-  @GetMapping("id/{id}")
-  public ResponseEntity<User> getUserById(@PathVariable ObjectId id)
-  {
-    User user = userService.getUserById(id);
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String username = authentication.getName();
+    User userInDB = userService.getUserByUsername(username);
+    userInDB.setUsername(user.getUsername());
+    userInDB.setPassword(user.getPassword());
+    userService.saveNewUser(userInDB);
     return new ResponseEntity<>(user, HttpStatus.OK);
   }
 
-//  @DeleteMapping("id/{id}")
-//  public ResponseEntity<?> deleteUser(@PathVariable ObjectId id)
-//  {
-//    userService.deleteUser(id);
-//    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-//  }
-
-  @PutMapping("/{username}")
-  public ResponseEntity<User> updateUser(@RequestBody User user, @PathVariable String username)
+  @GetMapping
+  public ResponseEntity<?> getUser()
   {
-    User userInDB = userService.getUserByUsername(username);
-    if (userInDB != null)
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    WhetherResponse response = wheatherService.getWheather("sangla hill");
+    String greeting = "";
+    if (response != null)
     {
-      userInDB.setUsername(user.getUsername());
-      userInDB.setPassword(user.getPassword());
-      userService.saveUser(userInDB);
-      return new ResponseEntity<>(user, HttpStatus.OK);
+      greeting = " Current Temp is " + response.getCurrent().getTempC() + "C" + " and Wind Speed is " + response.getCurrent().getWindKph() + "Km/h";
     }
-    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+    return new ResponseEntity<>("Hi " + authentication.getName() + greeting, HttpStatus.OK);
+  }
+
+  @GetMapping("/get-User-For-SA")
+  public ResponseEntity<?> getUserForSA()
+  {
+    List<User> users = userRepository.getUserForSA();
+
+    return new ResponseEntity<>(users, HttpStatus.OK);
   }
 }
 

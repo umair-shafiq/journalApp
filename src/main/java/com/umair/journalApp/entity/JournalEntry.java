@@ -1,6 +1,8 @@
 package com.umair.journalApp.entity;
 
+import com.umair.journalApp.enums.Sentiment;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
@@ -10,6 +12,7 @@ import java.time.LocalDateTime;
 
 @Document(collection = "journal_entries")
 @Data
+@NoArgsConstructor
 public class JournalEntry
 {
   @Id
@@ -18,4 +21,5 @@ public class JournalEntry
   private String title;
   private String content;
   private LocalDateTime date;
+  private Sentiment sentiment;
 }

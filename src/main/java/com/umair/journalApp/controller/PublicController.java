@@ -1,13 +1,18 @@
 package com.umair.journalApp.controller;
 
 import com.umair.journalApp.entity.User;
+import com.umair.journalApp.service.CustomUserDetailsServiceImpl;
 import com.umair.journalApp.service.RedisService;
 import com.umair.journalApp.service.UserService;
+import com.umair.journalApp.utils.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,15 +26,39 @@ public class PublicController
   @Autowired UserService userService;
   @Autowired
   private RedisService redisService;
+  @Autowired
+  private AuthenticationManager authenticationManager;
+  @Autowired
+  private CustomUserDetailsServiceImpl userDetailsService;
+  @Autowired
+  private JwtUtil jwtUtil;
 
   Logger logger = LoggerFactory.getLogger(PublicController.class);
-  @PostMapping("/create-user")
-  public ResponseEntity<User> createUser(@RequestBody User user)
+
+  @PostMapping("/signup")
+  public ResponseEntity<User> signup(@RequestBody User user)
   {
     try
     {
       userService.saveNewUser(user);
       return new ResponseEntity<>(user, HttpStatus.CREATED);
+    }
+    catch (Exception e)
+    {
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+  }
+
+  @PostMapping("/login")
+  public ResponseEntity<String> login(@RequestBody User user)
+  {
+    try
+    {
+      authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+      UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+      String jwt = jwtUtil.generateToken(userDetails.getUsername());
+      return new ResponseEntity<>(jwt, HttpStatus.OK);
     }
     catch (Exception e)
     {
@@ -50,7 +79,8 @@ public class PublicController
   }
 
   @PostMapping("/setEmail")
-  public void setEmail(@RequestBody String email) {
+  public void setEmail(@RequestBody String email)
+  {
     redisService.setEmail(email);
   }
 

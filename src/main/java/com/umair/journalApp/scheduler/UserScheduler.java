@@ -67,9 +67,15 @@ public class UserScheduler
       if (mostFrequentSentiemnt != null)
       {
         SentimentData sentimentData = SentimentData.builder().email(user.getEmail()).sentiment("Your most frequent sentiment is: " + mostFrequentSentiemnt).build();
-        kafkaTemplate.send("weekly-sentiments", sentimentData.getEmail(), sentimentData);
-        // emailService.sendEmail(user.getEmail(), "Most frequent sentiment for last 7 days.", "Your most frequent sentiment is: " + mostFrequentSentiemnt);
-        log.info("Sent sentiment data to Kafka: {}", sentimentData);
+        try
+        {
+          kafkaTemplate.send("weekly-sentiments", sentimentData.getEmail(), sentimentData);
+          log.info("Sent sentiment data to Kafka: {}", sentimentData);
+        }
+        catch (Exception e)
+        {
+          emailService.sendEmail(user.getEmail(), "Most frequent sentiment for last 7 days.", "Your most frequent sentiment is: " + mostFrequentSentiemnt);
+        }
       }
 
     }
